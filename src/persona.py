@@ -54,7 +54,7 @@ DEFAULT_SNARK = 0.2
 
 @dataclass(frozen=True)
 class Persona:
-    name: str = "Swarna"
+    name: str = "Ekansh"
     user: str = USER_NAME
 
     self_concept: str = (
