@@ -1,0 +1,4 @@
+# Normalize line endings to LF in the repo on every platform.
+# Matters here: the persona is byte-identical across machines, so prompt caching
+# stays valid (CRLF/LF drift would silently bust the cache).
+* text=auto eol=lf
