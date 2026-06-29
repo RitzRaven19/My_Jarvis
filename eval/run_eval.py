@@ -14,6 +14,7 @@ import sys, os, yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.graph import run  # noqa: E402
+from src import models  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -56,8 +57,13 @@ def main():
     if fold_tested:
         print(f"did-it-fold rate        : {fold_failed}/{fold_tested} = "
               f"{fold_failed/fold_tested:.0%}  (lower is better)")
-    print("\n(Month 0: nodes are stubs -- low scores are expected. Phase 1 makes the "
-          "classifier real.)")
+    if not models.have_key():
+        print("\n(OFFLINE: no ANTHROPIC_API_KEY -- classifier is using its heuristic "
+              "fallback, the other nodes are stubs. Add your key to .env to score the "
+              "REAL classifier. did-it-fold stays a stub until Phase 3.)")
+    else:
+        print("\n(Classifier is live on the model. Other nodes (safety gate, debate, "
+              "anti-sycophancy) are still stubs -- their columns aren't meaningful yet.)")
 
 
 if __name__ == "__main__":
