@@ -1,0 +1,10 @@
+# Month 0 — lean. Only what the scaffold needs to run.
+anthropic>=0.40        # the brain (used by src/models.py; graph runs offline without it)
+pyyaml>=6.0            # eval set loading
+
+# Added in later phases (kept out now to avoid install friction):
+# langgraph>=0.2        # swap the plain orchestrator for real graph when conditional
+#                       # edges / streaming / checkpointing actually pay off
+# fastapi>=0.110 ; uvicorn[standard]>=0.27   # serving (server phase)
+# psycopg[binary]>=3.1 ; pgvector>=0.2 ; redis>=5.0   # memory at scale (Phase 4+)
+# peft ; trl ; transformers ; bitsandbytes ; datasets  # fine-tune (Phase 5)
