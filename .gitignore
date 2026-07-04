@@ -16,6 +16,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Runtime data (Ekansh's memory — personal, not for the repo)
+data/
+
 # Scratch / model artifacts
 scratchpad/
 *.log

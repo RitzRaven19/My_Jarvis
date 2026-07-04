@@ -27,7 +27,7 @@ from src.nodes.proposer import propose
 from src.nodes.critic import critique
 from src.nodes.judge import judge, MAX_ROUNDS
 from src.nodes.sycophancy import anti_sycophancy
-from src.nodes.memory import store
+from src.nodes.memory import store, related_note
 
 DIRECT_TYPES = {"FACT", "NORMATIVE"}
 DEBATE_TYPES = {"CONTESTED", "SPECULATIVE"}
@@ -73,6 +73,13 @@ def run(question: str, pushback: str | None = None, snark: str = "default") -> d
     """
     state: dict = dict(new_state(question, pushback, snark))
 
+    # 0) recall -- has he taken a position on something related before? (no brain
+    #    needed; pure memory lookup). Stored on state so a later node/answer can
+    #    lead with "we've been here before".
+    note = related_note(question)
+    if note:
+        state["related_past"] = note
+
     # 1) safety gate (first, by design)
     state.update(safety_gate(state))
 
@@ -108,6 +115,8 @@ def _main(argv: list[str]) -> None:
     question = " ".join(argv[1:]).strip() or "Would aliens develop patriarchy?"
     s = run(question)
     print(f"Q: {question}\n")
+    if s.get("related_past"):
+        print(f"  {s['related_past']}")
     print(f"  safety_lane : {s.get('safety_lane')}")
     print(f"  qtype       : {s.get('qtype')} (conf {s.get('confidence')})")
     print(f"  answer      : {s.get('answer')}")
