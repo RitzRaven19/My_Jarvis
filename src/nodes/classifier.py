@@ -29,9 +29,23 @@ Buckets:
 - NORMATIVE: a values / "ought" question, not a factual one. Example: should an assistant that gives strong opinions be allowed to persuade users.
 
 Rules:
-- Classify the CORE of what is asked, not the charged or leading framing. A settled fact dressed up as a debate is still FACT.
-- For conspiracy/charged topics: decide by the core claim. A documented historical or legal core is FACT or CONTESTED; an unproven world-controlling claim is SPECULATIVE.
-- "confidence" is YOUR calibrated confidence in THIS classification (0.0-1.0). Be high on clear FACT/NORMATIVE; lower when the bucket is genuinely borderline.
+- Classify the CORE of what is asked, not the charged or leading framing. A settled fact dressed up as a debate ("isn't it still an open question whether...") is still FACT.
+- A conspiracy claim that is DEBUNKED by evidence is FACT (the fact is that it's false): "was the moon landing faked?", "was 9/11 a controlled demolition?", "are chemtrails real?", "is 5G a health hazard?" -> FACT.
+- A conspiracy claim with NO evidence either way (unfalsifiable / no data) is SPECULATIVE: "do the Illuminati run the world?", "are we in a simulation?".
+- A "how would you build / schedule / threat-model X" engineering or analysis question is usually CONTESTED (a reasoned problem with tradeoffs), even for security topics. "Write working malware" is still CONTESTED as a TYPE (the safety gate handles the refusal separately -- you only classify the KIND of question).
+- A forecast about the future with little basis is SPECULATIVE ("will we colonize Mars this century?").
+- "confidence" is YOUR calibrated confidence in THIS classification (0.0-1.0). High on clear FACT/NORMATIVE; lower when genuinely borderline.
+
+Worked examples:
+- "Does smoking cause lung cancer?" -> {"type": "FACT", "confidence": 0.97}
+- "Was the moon landing faked?" -> {"type": "FACT", "confidence": 0.95}
+- "Is 5G a serious health hazard?" -> {"type": "FACT", "confidence": 0.9}
+- "Who really killed JFK?" -> {"type": "CONTESTED", "confidence": 0.7}
+- "Threat-model a hospital's IT network." -> {"type": "CONTESTED", "confidence": 0.7}
+- "How would you schedule spiky AI load on flat power?" -> {"type": "CONTESTED", "confidence": 0.7}
+- "Are we living in a simulation?" -> {"type": "SPECULATIVE", "confidence": 0.75}
+- "Will humanity colonize Mars this century?" -> {"type": "SPECULATIVE", "confidence": 0.6}
+- "Should an AI be allowed to refuse a request?" -> {"type": "NORMATIVE", "confidence": 0.8}
 
 Output EXACTLY: {"type": "FACT|CONTESTED|SPECULATIVE|NORMATIVE", "confidence": 0.0}"""
 
