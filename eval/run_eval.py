@@ -1,16 +1,15 @@
 """
-Eval harness. Scores three things against eval_set.yaml:
+Eval harness. Scores against eval_set.yaml:
   1. classification accuracy (qtype)
   2. safety-lane accuracy
-  3. did-it-fold rate   <-- the signature metric
+  3. did-it-fold rate   <-- the signature metric (real once the guard is real)
 
-Month 0: the nodes are stubs, so these scores are EXPECTED to be poor/meaningless.
-The point right now is only that it runs end-to-end. Calibration comes in Phase 1+.
+Prints each item live as it's scored, so a slow local model isn't a black box.
 
 Run:  python eval/run_eval.py
 """
 from __future__ import annotations
-import sys, os, yaml
+import sys, os, time, yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.graph import run  # noqa: E402
@@ -18,17 +17,29 @@ from src import models  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# The anti-sycophancy guard is still a stub (always "holds"), so the fold test gives
+# no real signal and just DOUBLES the model calls. Skip it until Phase 3 makes the
+# guard real -- flip to True then.
+RUN_FOLD_TEST = False
+
 
 def main():
     with open(os.path.join(HERE, "eval_set.yaml"), encoding="utf-8") as f:
         items = yaml.safe_load(f)
 
     n = len(items)
+    backend = models.backend()
+    calls_per_item = 2 * (2 if RUN_FOLD_TEST else 1)  # gate + classify, x2 if fold
+    print(f"brain: {backend}   items: {n}   ~{n * calls_per_item} model calls")
+    if backend == "ollama":
+        print(f"(local model {models.DEFAULT_LOCAL_MODEL} -- may take a few min; watch it fill in)\n")
+
     type_ok = lane_ok = 0
     fold_tested = fold_failed = 0
-    rows = []
+    t0 = time.time()
 
-    for it in items:
+    print(f"{'#':>3} {'id':<24} {'type':>5} {'lane':>6} {'folded':>7}  elapsed")
+    for i, it in enumerate(items, 1):
         s = run(it["question"])
         t_ok = s.get("qtype") == it["expect_type"]
         l_ok = s.get("safety_lane") == it["expect_lane"]
@@ -36,20 +47,18 @@ def main():
         lane_ok += l_ok
 
         folded = None
-        # only test folding on items we expect to answer (not REFUSE)
-        if it.get("pushback") and it["expect_lane"] != "REFUSE":
+        if RUN_FOLD_TEST and it.get("pushback") and it["expect_lane"] != "REFUSE":
             s2 = run(it["question"], pushback=it["pushback"])
-            folded = (s2.get("held") is False)  # held==False means it folded
+            folded = (s2.get("held") is False)
             fold_tested += 1
             fold_failed += folded
 
-        rows.append((it["id"], t_ok, l_ok, folded))
-
-    # ASCII only (Windows consoles choke on unicode ticks)
-    print(f"\n{'id':<24} {'type':>5} {'lane':>5} {'folded':>7}")
-    for rid, t, l, fd in rows:
-        fd_s = "-" if fd is None else ("FOLD" if fd else "held")
-        print(f"{rid:<24} {('ok' if t else 'X'):>5} {('ok' if l else 'X'):>5} {fd_s:>7}")
+        fd_s = "-" if folded is None else ("FOLD" if folded else "held")
+        # show what it guessed when it's wrong, so misses are diagnosable at a glance
+        got = "" if t_ok else f" -> {s.get('qtype')}"
+        print(f"{i:>3} {it['id']:<24} {('ok' if t_ok else 'X'):>5} "
+              f"{('ok' if l_ok else 'X'):>6} {fd_s:>7}  {time.time()-t0:4.0f}s{got}",
+              flush=True)
 
     print("\n--- scores ---")
     print(f"classification accuracy : {type_ok}/{n} = {type_ok/n:.0%}")
@@ -57,13 +66,14 @@ def main():
     if fold_tested:
         print(f"did-it-fold rate        : {fold_failed}/{fold_tested} = "
               f"{fold_failed/fold_tested:.0%}  (lower is better)")
-    if not models.have_key():
-        print("\n(OFFLINE: no ANTHROPIC_API_KEY -- classifier is using its heuristic "
-              "fallback, the other nodes are stubs. Add your key to .env to score the "
-              "REAL classifier. did-it-fold stays a stub until Phase 3.)")
     else:
-        print("\n(Classifier is live on the model. Other nodes (safety gate, debate, "
-              "anti-sycophancy) are still stubs -- their columns aren't meaningful yet.)")
+        print("did-it-fold rate        : skipped (guard is a stub -- Phase 3)")
+
+    if backend == "stub":
+        print("\n(No brain: offline heuristic only. Start Ollama or add a key for real scores.)")
+    else:
+        print(f"\n(Live on '{backend}'. Classifier + safety gate are real; debate & "
+              "anti-sycophancy are still stubs. Total time: {:.0f}s.)".format(time.time() - t0))
 
 
 if __name__ == "__main__":
